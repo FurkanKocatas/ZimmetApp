@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zimmetler Yönetimi</title>
+    <link rel="stylesheet" href="dist/tailwind.min.css">
+    <link rel="stylesheet" href="styles/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Futura+PT:wght@400;700&display=swap" rel="stylesheet">
+    <script src="libs/xlsx.full.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script>
+    <script src="scripts/app.js" defer></script>
+    <style>
+        body {
+            background: linear-gradient(to right, #ffaf20, #cf426a);
+            font-family: 'Futura PT', sans-serif;
+        }
+        .header, .modal, .qrModal, .qrInputModal {
+            background: #405e7f;
+        }
+        .header h1, .modal h3, .qrModal h3, .qrInputModal h3 {
+            color: #ffffff;
+        }
+        .button {
+            background: #4e54c8;
+            color: #ffffff;
+        }
+        .button:hover {
+            background: #8f94fb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <header class="bg-blue-600 text-white py-4 flex flex-wrap items-center justify-between px-4 sm:px-6">
+        <h1 class="text-lg sm:text-2xl font-bold">Zimmetler Yönetimi</h1>
+        <div class="mt-2 sm:mt-0 flex space-x-2">
+            <button id="qrAddButton" class="bg-[#bf4d6a] text-white py-2 px-3 sm:px-4 rounded hover:bg-[#a63b56]">QR Ekle</button>
+            <button id="exportButton" class="bg-[#405e7f] text-white py-2 px-3 sm:px-4 rounded hover:bg-[#324a63]">Excel Çıktısı Al</button>
+            <button id="logoutButton" class="bg-[#ffb347] text-white py-2 px-3 sm:px-4 rounded hover:bg-[#e69a2f]">Çıkış Yap</button>
+        </div>
+    </header>
+
+    <div class="container mx-auto mt-6">
+        <div class="w-full bg-white shadow-md rounded-lg p-4">
+            <h2 class="text-xl font-semibold mb-4">Zimmetler</h2>
+            <div id="assignmentList" class="overflow-x-auto">
+                <table class="w-full table-auto border-collapse border border-gray-300 text-sm sm:text-base">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 px-4 py-2">Kategori</th>
+                            <th class="border border-gray-300 px-4 py-2">Cihaz Adı</th>
+                            <th class="border border-gray-300 px-4 py-2">Seri Numarası</th>
+                            <th class="border border-gray-300 px-4 py-2">Kime Zimmetli</th>
+                            <th class="border border-gray-300 px-4 py-2">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assignmentTableBody">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+            <button id="addAssignmentButton" class="bg-green-500 text-white py-2 px-4 rounded mt-4">Yeni Zimmet Ekle</button>
+        </div>
+    </div>
+
+    <!-- Add Assignment Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-1/3">
+            <h3 id="modalTitle" class="text-xl font-semibold mb-4"></h3>
+            <form id="modalForm">
+                <div id="modalContent" class="space-y-4">
+                    <!-- Dynamic Inputs -->
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button type="button" id="cancelButton" class="bg-gray-500 text-white py-2 px-4 rounded mr-2">İptal</button>
+                    <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="qrModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-1/3">
+            <h3 class="text-xl font-semibold mb-4">QR Kodunu Tara</h3>
+            <video id="qrVideo" class="w-full rounded mb-4"></video>
+            <canvas id="qrCanvas" class="hidden"></canvas>
+            <div class="flex justify-end mt-4">
+                <button id="qrCancelButton" class="bg-gray-500 text-white py-2 px-4 rounded">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Input Modal -->
+    <div id="qrInputModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-1/3">
+            <h3 class="text-xl font-semibold mb-4">QR Kod Bilgilerini Kontrol Edin</h3>
+            <form id="qrInputForm" class="space-y-4">
+                <div>
+                    <label for="serialNumber" class="block text-gray-700">Seri Numarası:</label>
+                    <input
+                        type="text"
+                        id="serialNumber"
+                        name="serialNumber"
+                        class="w-full border border-gray-300 rounded px-3 py-2"
+                        placeholder="Seri Numarası"
+                        readonly
+                    />
+                </div>
+                <div>
+                    <label for="deviceName" class="block text-gray-700">Cihaz Adı:</label>
+                    <input
+                        type="text"
+                        id="deviceName"
+                        name="deviceName"
+                        class="w-full border border-gray-300 rounded px-3 py-2"
+                        placeholder="Cihaz Adını Girin"
+                        required
+                    />
+                </div>
+                <div>
+                    <label for="assignedTo" class="block text-gray-700">Kime Zimmetli:</label>
+                    <input
+                        type="text"
+                        id="assignedTo"
+                        name="assignedTo"
+                        class="w-full border border-gray-300 rounded px-3 py-2"
+                        placeholder="Zimmetlenen Kişi (Opsiyonel)"
+                    />
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button
+                        type="button"
+                        id="cancelQrInput"
+                        class="bg-gray-500 text-white py-2 px-4 rounded"
+                    >
+                        İptal
+                    </button>
+                    <button
+                        type="submit"
+                        class="bg-blue-500 text-white py-2 px-4 rounded"
+                    >
+                        Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
